@@ -24,10 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
 				message => {
 					switch (message.command) {
 						case 'getInfo':
-							let colour = message.colour;
-							let category = message.category;
-							vscode.window.showErrorMessage(category);
-							vscode.window.showErrorMessage(colour);
+							const colour = message.colour;
+							const category = message.category;
+							let newCategory = new Category(category, colour);
 							return;
 						case 'closeWindow':
 							panel.dispose();
@@ -52,9 +51,9 @@ export function activate(context: vscode.ExtensionContext) {
 			const range = document.getWordRangeAtPosition(position);
 			const word = document.getText(range);
 			const hoverString = new vscode.MarkdownString();
-			hoverString.appendMarkdown(`# Main category:\n\n`);
+			hoverString.appendMarkdown(`## Main category:\n\n`);
 			hoverString.appendMarkdown(``);
-			hoverString.appendMarkdown(`## Sub categories:\n\n`);
+			hoverString.appendMarkdown(`### Sub categories:\n\n`);
 			hoverString.appendMarkdown(``);
 			return new vscode.Hover(hoverString);
 		}
@@ -63,6 +62,14 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 let markers: Map<string, vscode.Range[]> = new Map();
+
+class Category {
+	public name: string; colour: string;
+	constructor(name: string, colour: string) {
+		this.name = name;
+		this.colour = colour;
+	}
+}
 
 function addMarker() {
 	const editor = vscode.window.activeTextEditor;
