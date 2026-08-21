@@ -1,14 +1,41 @@
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
-	let disposable = vscode.commands.registerCommand('marker.createNewMarker', addMarker);
-	context.subscriptions.push(disposable);
-	disposable = vscode.commands.registerCommand('marker.deleteMarker', deleteMarker);
-	context.subscriptions.push(disposable);
-	disposable = vscode.commands.registerCommand('marker.deleteAllMarkers', deleteAllMarkers);
-	context.subscriptions.push(disposable);
-	disposable = vscode.commands.registerCommand('marker.createNewCategory', createNewCategory);
-	context.subscriptions.push(disposable);
+	// let disposable = vscode.commands.registerCommand('marker.createNewMarker', addMarker);
+	// context.subscriptions.push(disposable);
+	// disposable = vscode.commands.registerCommand('marker.deleteMarker', deleteMarker);
+	// context.subscriptions.push(disposable);
+	// disposable = vscode.commands.registerCommand('marker.deleteAllMarkers', deleteAllMarkers);
+	// context.subscriptions.push(disposable);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('marker.createNewCategory', () => {
+			const newCategory = vscode.window.createWebviewPanel(
+				'newCategory',
+				'Create a new category',
+				vscode.ViewColumn.One,
+				{
+					enableScripts: true
+				}
+			);
+
+			newCategory.webview.html = getWebViewContent();
+
+			newCategory.webview.onDidReceiveMessage(
+				message => {
+					switch (message.command) {
+						case 'getInfo':
+							let colour = message.colour;
+							let category = message.category;
+							vscode.window.showErrorMessage(category);
+							vscode.window.showErrorMessage(colour);
+							return;
+					}
+				},
+				undefined,
+				context.subscriptions
+			);
+		})
+	);
 
 	vscode.window.onDidChangeActiveTextEditor(editor => {
 		if (editor) {
@@ -46,16 +73,6 @@ function deleteAllMarkers() {
 	
 }
 
-function createNewCategory() {
-	const newCategory = vscode.window.createWebviewPanel(
-		'newCategory',
-		'Create a new category',
-		vscode.ViewColumn.One,
-		{}
-	);
-	newCategory.webview.html = getWebViewContent();
-}
-
 function getWebViewContent() {
 	return `<!DOCTYPE html>
 	<html lang='en'>
@@ -65,7 +82,31 @@ function getWebViewContent() {
 		<title>Create a new category</title>
 	</head>
 	<body>
-
+		<form>
+			<label>New category</label>
+			<input id="category" type="text">
+			<label>Colour</label>
+			<input id="colour" type="color">
+			<input id="submit" type="submit" value="Create">
+		</form>
+		<script>
+			const vscode = acquireVsCodeApi();
+			let categoryInput
+			let colourInput;
+			document.getElementById('colour').addEventListener('input', (event) => {
+				colourInput = event.target.value;
+			})
+			document.getElementById('submit').onclick = () => {
+				categoryInput = document.getElementById('category').value;
+				if (category && colour) {
+					vscode.postMessage({
+						command: 'getInfo',
+						category: categoryInput,
+						colour: colourInput,
+					})
+				}
+			}
+		</script>
 	</body>`;
 }
 
