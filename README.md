@@ -1,8 +1,6 @@
-# marker README
+# MarkerCode
 
-This is the README for your extension "marker". After writing up a brief description, we recommend including the following sections.
-
-## Features
+MarkerCode is a VsCode extension that highlights and groups lines of code into categories, allowing for easy filtering of lines, whether you want, or *don't* want to see them, and quick recognition of where a piece of code belongs. You can even put specific lines into more than one category, called sub-categories.
 
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 

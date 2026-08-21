@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
-	// let disposable = vscode.commands.registerCommand('marker.createNewMarker', addMarker);
+	// let disposable = vscode.commands.registerCommand('markercode.createNewMarker', addMarker);
 	// context.subscriptions.push(disposable);
-	// disposable = vscode.commands.registerCommand('marker.deleteMarker', deleteMarker);
+	// disposable = vscode.commands.registerCommand('markercode.deleteMarker', deleteMarker);
 	// context.subscriptions.push(disposable);
-	// disposable = vscode.commands.registerCommand('marker.deleteAllMarkers', deleteAllMarkers);
+	// disposable = vscode.commands.registerCommand('markercode.deleteAllMarkers', deleteAllMarkers);
 	// context.subscriptions.push(disposable);
 	context.subscriptions.push(
 		vscode.commands.registerCommand('marker.createNewCategory', () => {
-			const newCategory = vscode.window.createWebviewPanel(
-				'newCategory',
+			const panel = vscode.window.createWebviewPanel(
+				'panel',
 				'Create a new category',
 				vscode.ViewColumn.One,
 				{
@@ -18,9 +18,9 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 			);
 
-			newCategory.webview.html = getWebViewContent();
+			panel.webview.html = getWebViewContent();
 
-			newCategory.webview.onDidReceiveMessage(
+			panel.webview.onDidReceiveMessage(
 				message => {
 					switch (message.command) {
 						case 'getInfo':
@@ -29,6 +29,10 @@ export function activate(context: vscode.ExtensionContext) {
 							vscode.window.showErrorMessage(category);
 							vscode.window.showErrorMessage(colour);
 							return;
+						case 'closeWindow':
+							panel.dispose();
+						case 'error':
+							vscode.window.showErrorMessage(message.error);
 					}
 				},
 				undefined,
@@ -42,6 +46,20 @@ export function activate(context: vscode.ExtensionContext) {
 			reapply(editor);
 		}
 	}, null, context.subscriptions);
+
+	const hoverProvider = vscode.languages.registerHoverProvider('*', {
+		provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
+			const range = document.getWordRangeAtPosition(position);
+			const word = document.getText(range);
+			const hoverString = new vscode.MarkdownString();
+			hoverString.appendMarkdown(`# Main category:\n\n`);
+			hoverString.appendMarkdown(``);
+			hoverString.appendMarkdown(`## Sub categories:\n\n`);
+			hoverString.appendMarkdown(``);
+			return new vscode.Hover(hoverString);
+		}
+	});
+	context.subscriptions.push(hoverProvider);
 }
 
 let markers: Map<string, vscode.Range[]> = new Map();
@@ -91,18 +109,26 @@ function getWebViewContent() {
 		</form>
 		<script>
 			const vscode = acquireVsCodeApi();
-			let categoryInput
+			let categoryInput;
 			let colourInput;
 			document.getElementById('colour').addEventListener('input', (event) => {
 				colourInput = event.target.value;
 			})
 			document.getElementById('submit').onclick = () => {
 				categoryInput = document.getElementById('category').value;
-				if (category && colour) {
+				if (category !== undefined && colour !== '#000000') {
 					vscode.postMessage({
 						command: 'getInfo',
 						category: categoryInput,
-						colour: colourInput,
+						colour: colourInput
+					})
+					vscode.postMessage({
+						command: 'closeWindow'
+					})
+				} else {
+					vscode.postMessage({
+						command: 'error',
+						error: 'Error, could not create new category.'
 					})
 				}
 			}
