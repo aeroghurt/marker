@@ -19,14 +19,11 @@ export function activate(context: vscode.ExtensionContext) {
 			existingMarkers.push(range);
 			markers.set(documentUri, existingMarkers);
 
-			for (let i = 0; i < existingCategories.length; i++) {
-				vscode.window.showWarningMessage(`${existingCategories}`);
-				const quickPick = await vscode.window.showQuickPick(
-					existingCategories, {
-						placeHolder: 'Select from existing categories, or search for one'
-					}
-				);
-			};
+			const quickPick = await vscode.window.showQuickPick(
+				existingCategories, {
+					placeHolder: 'Select from existing categories, or create one'
+				}
+			);
 		}
 	);
 	context.subscriptions.push(disposable);
@@ -100,8 +97,15 @@ class Category {
 	}
 }
 
-let existingCategories: string[] = [];
+let existingCategories: string[] = [`Create New Category`];
 let existingCategoriesColours: string[] = [];
+
+existingCategories.forEach((item) => {
+	const decorationType = vscode.window.createTextEditorDecorationType({
+		backgroundColor: existingCategoriesColours[existingCategories.indexOf(item)],
+		isWholeLine: true
+	});
+});
 
 function deleteMarker() {
 
