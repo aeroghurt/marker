@@ -1,11 +1,38 @@
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
-	// let disposable = vscode.commands.registerCommand('markercode.createNewMarker', addMarker);
+	let disposable = vscode.commands.registerCommand('marker.createNewMarker', async () => {
+			const editor = vscode.window.activeTextEditor;
+
+			if (!editor) {
+				vscode.window.showWarningMessage(`No active editor found.`);
+				return;
+			}
+
+			const selection = editor.selection;
+			const start = selection.start;
+			const end = selection.end;
+			const range = new vscode.Range(start, end);
+
+			const documentUri = editor.document.uri.toString();
+			const existingMarkers = markers.get(documentUri) || [];
+			existingMarkers.push(range);
+			markers.set(documentUri, existingMarkers);
+
+			for (let i = 0; i < existingCategories.length; i++) {
+				vscode.window.showWarningMessage(`${existingCategories}`);
+				const quickPick = await vscode.window.showQuickPick(
+					existingCategories, {
+						placeHolder: 'Select from existing categories, or search for one'
+					}
+				);
+			};
+		}
+	);
+	context.subscriptions.push(disposable);
+	// disposable = vscode.commands.registerCommand('marker.deleteMarker', deleteMarker);
 	// context.subscriptions.push(disposable);
-	// disposable = vscode.commands.registerCommand('markercode.deleteMarker', deleteMarker);
-	// context.subscriptions.push(disposable);
-	// disposable = vscode.commands.registerCommand('markercode.deleteAllMarkers', deleteAllMarkers);
+	// disposable = vscode.commands.registerCommand('marker.deleteAllMarkers', deleteAllMarkers);
 	// context.subscriptions.push(disposable);
 	context.subscriptions.push(
 		vscode.commands.registerCommand('marker.createNewCategory', () => {
@@ -27,6 +54,8 @@ export function activate(context: vscode.ExtensionContext) {
 							const colour = message.colour;
 							const category = message.category;
 							let newCategory = new Category(category, colour);
+							existingCategories.push(newCategory.name);
+							existingCategoriesColours.push(newCategory.colour);
 							return;
 						case 'closeWindow':
 							panel.dispose();
@@ -71,24 +100,8 @@ class Category {
 	}
 }
 
-function addMarker() {
-	const editor = vscode.window.activeTextEditor;
-
-	if (!editor) {
-		vscode.window.showWarningMessage(`No active editor found.`);
-		return;
-	}
-
-	const selection = editor.selection;
-	const start = selection.start;
-	const end = selection.end;
-	const range = new vscode.Range(start, end);
-
-	const documentUri = editor.document.uri.toString();
-	const existingMarkers = markers.get(documentUri) || [];
-	existingMarkers.push(range);
-	markers.set(documentUri, existingMarkers);
-}
+let existingCategories: string[] = [];
+let existingCategoriesColours: string[] = [];
 
 function deleteMarker() {
 
@@ -146,25 +159,5 @@ function getWebViewContent() {
 function reapply(editor: vscode.TextEditor) {
 	
 }
-		// const editor = vscode.window.activeTextEditor;
-
-		// if (!editor) {
-		// 	return;
-
-		// const document = editor.document;
-		// const selection = editor.selection;
-		// const selectedText = editor.document.getText(selection);
-
-		// const documentUri = editor.document.uri.toString();
-		// const existingHighlights= marker.get(documentUri) || [];
-
-		// if (!selectedText || selectedText.trim().length === 0) {
-		// 	vscode.window.showWarningMessage(`No text selected.`);
-		// 	return;
-		// }
-
-		// context.subscriptions.push(disposable);
-
-
 
 export function deactivate() {}
