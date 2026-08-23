@@ -17,18 +17,31 @@ export async function activate(context: vscode.ExtensionContext) {
 			const start = selection.start;
 			const end = selection.end;
 			const range = new vscode.Range(start, end);
-			const word = document.getText(range);
+			// const word = document.getText(range);
 			
 			const documentUri = editor.document.uri.toString();
 			const existingMarkers = markers.get(documentUri) || [];
 			existingMarkers.push(range);
 			markers.set(documentUri, existingMarkers);
 
+			// change Category[] into string[] to be allowed in vscode.window.showQuickPick()
+			const existingCategoriesConverted = existingCategories.map(item => ({
+				label: item.name,
+				colour: item.colour,
+				originalRef: item
+			}));
+
+			// gets the category the user selected
 			const quickPick = await vscode.window.showQuickPick(
-				existingCategories.map(String), {
+				existingCategoriesConverted, {
 					placeHolder: 'Select from existing categories, or create one'
 				}
 			);
+
+			if (quickPick) {
+				vscode.window.showInformationMessage(`${quickPick.label, quickPick.colour}`);
+				vscode.window.showInformationMessage(`${quickPick.label}`);
+			}
 
 			// existingCategories.forEach((item, index) => {
 			// 	let category = new Category(existingCategories[item.index], existingCategoriesColours[item]);
@@ -48,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 			// editor.setDecorations(decorationTypes[1], [range]);
 
-			vscode.window.showInformationMessage(`${quickPick}`);
+			// vscode.window.showInformationMessage(`${quickPick}`);
 			
 		}
 	);
