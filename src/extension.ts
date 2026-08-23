@@ -17,7 +17,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			const start = selection.start;
 			const end = selection.end;
 			const range = new vscode.Range(start, end);
-			// const word = document.getText(range);
 			
 			const documentUri = editor.document.uri.toString();
 			const existingMarkers = markers.get(documentUri) || [];
@@ -37,32 +36,14 @@ export async function activate(context: vscode.ExtensionContext) {
 					placeHolder: 'Select from existing categories, or create one'
 				}
 			);
-
-			if (quickPick) {
-				vscode.window.showInformationMessage(`${quickPick.label, quickPick.colour}`);
-				vscode.window.showInformationMessage(`${quickPick.label}`);
-			}
-
-			// existingCategories.forEach((item, index) => {
-			// 	let category = new Category(existingCategories[item.index], existingCategoriesColours[item]);
-			// 	decorationType = vscode.window.createTextEditorDecorationType({
-			// 		backgroundColor: existingCategoriesColours[existingCategories.indexOf(item)],
-			// 		isWholeLine: true
-			// 	});
-			// 	return decorationType;
-			// });
-
-			// const decorationTypes = existingCategories.map((item, index) => {
-			// 	return vscode.window.createTextEditorDecorationType({
-			// 		backgroundColor: existingCategoriesColours[index],
-			// 		isWholeLine: true
-			// 	});
-			// });
-
-			// editor.setDecorations(decorationTypes[1], [range]);
-
-			// vscode.window.showInformationMessage(`${quickPick}`);
 			
+			if (quickPick) {
+				const decorationType = vscode.window.createTextEditorDecorationType({
+					backgroundColor: quickPick.colour + `4D`, // along with the background color, sets bg opacity to 30%
+					isWholeLine: true,
+				});
+				editor.setDecorations(decorationType, [range]);
+			}
 		}
 	);
 	context.subscriptions.push(disposable);
