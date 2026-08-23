@@ -1,10 +1,14 @@
 import * as vscode from 'vscode';
 
-export function activate(context: vscode.ExtensionContext) {
+const document = vscode.window.activeTextEditor?.document;
+let decorationType: vscode.TextEditorDecorationType;
+
+export async function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('marker.createNewMarker', async () => {
+			updateDecorationType();
 			const editor = vscode.window.activeTextEditor;
 
-			if (!editor) {
+			if (!editor || !document) {
 				vscode.window.showWarningMessage(`No active editor found.`);
 				return;
 			}
@@ -13,17 +17,39 @@ export function activate(context: vscode.ExtensionContext) {
 			const start = selection.start;
 			const end = selection.end;
 			const range = new vscode.Range(start, end);
-
+			const word = document.getText(range);
+			
 			const documentUri = editor.document.uri.toString();
 			const existingMarkers = markers.get(documentUri) || [];
 			existingMarkers.push(range);
 			markers.set(documentUri, existingMarkers);
 
 			const quickPick = await vscode.window.showQuickPick(
-				existingCategories, {
+				existingCategories.map(String), {
 					placeHolder: 'Select from existing categories, or create one'
 				}
 			);
+
+			// existingCategories.forEach((item, index) => {
+			// 	let category = new Category(existingCategories[item.index], existingCategoriesColours[item]);
+			// 	decorationType = vscode.window.createTextEditorDecorationType({
+			// 		backgroundColor: existingCategoriesColours[existingCategories.indexOf(item)],
+			// 		isWholeLine: true
+			// 	});
+			// 	return decorationType;
+			// });
+
+			// const decorationTypes = existingCategories.map((item, index) => {
+			// 	return vscode.window.createTextEditorDecorationType({
+			// 		backgroundColor: existingCategoriesColours[index],
+			// 		isWholeLine: true
+			// 	});
+			// });
+
+			// editor.setDecorations(decorationTypes[1], [range]);
+
+			vscode.window.showInformationMessage(`${quickPick}`);
+			
 		}
 	);
 	context.subscriptions.push(disposable);
@@ -31,6 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// context.subscriptions.push(disposable);
 	// disposable = vscode.commands.registerCommand('marker.deleteAllMarkers', deleteAllMarkers);
 	// context.subscriptions.push(disposable);
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand('marker.createNewCategory', () => {
 			const panel = vscode.window.createWebviewPanel(
@@ -40,6 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
 				{
 					enableScripts: true
 				}
+				
 			);
 
 			panel.webview.html = getWebViewContent();
@@ -50,14 +78,14 @@ export function activate(context: vscode.ExtensionContext) {
 						case 'getInfo':
 							const colour = message.colour;
 							const category = message.category;
-							let newCategory = new Category(category, colour);
-							existingCategories.push(newCategory.name);
-							existingCategoriesColours.push(newCategory.colour);
-							return;
+							existingCategories.push(new Category(category, colour));
+							break;
 						case 'closeWindow':
 							panel.dispose();
+							break;
 						case 'error':
 							vscode.window.showErrorMessage(message.error);
+							break;
 					}
 				},
 				undefined,
@@ -84,7 +112,12 @@ export function activate(context: vscode.ExtensionContext) {
 			return new vscode.Hover(hoverString);
 		}
 	});
-	context.subscriptions.push(hoverProvider);
+
+	function updateDecorationType() {
+		if (!existingCategories) {
+			return;
+		}
+	}
 }
 
 let markers: Map<string, vscode.Range[]> = new Map();
@@ -97,15 +130,7 @@ class Category {
 	}
 }
 
-let existingCategories: string[] = [`Create New Category`];
-let existingCategoriesColours: string[] = [];
-
-existingCategories.forEach((item) => {
-	const decorationType = vscode.window.createTextEditorDecorationType({
-		backgroundColor: existingCategoriesColours[existingCategories.indexOf(item)],
-		isWholeLine: true
-	});
-});
+let existingCategories: Category[] = [];
 
 function deleteMarker() {
 
