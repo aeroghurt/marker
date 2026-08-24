@@ -1,11 +1,9 @@
 import * as vscode from 'vscode';
 
 const document = vscode.window.activeTextEditor?.document;
-let decorationType: vscode.TextEditorDecorationType;
 
 export async function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('marker.createNewMarker', async () => {
-			updateDecorationType();
 			const editor = vscode.window.activeTextEditor;
 
 			if (!editor || !document) {
@@ -18,10 +16,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			const end = selection.end;
 			const range = new vscode.Range(start, end);
 			
+			// gets file path
 			const documentUri = editor.document.uri.toString();
 			const existingMarkers = markers.get(documentUri) || [];
 			existingMarkers.push(range);
-			markers.set(documentUri, existingMarkers);
+			markers.set(documentUri, existingMarkers); // stores it in existingMarkers according to the file path and markers inside
 
 			// change Category[] into string[] to be allowed in vscode.window.showQuickPick()
 			const existingCategoriesConverted = existingCategories.map(item => ({
@@ -43,12 +42,29 @@ export async function activate(context: vscode.ExtensionContext) {
 					isWholeLine: true,
 				});
 				editor.setDecorations(decorationType, [range]);
+				hover(quickPick.label);
 			}
 		}
 	);
 	context.subscriptions.push(disposable);
-	// disposable = vscode.commands.registerCommand('marker.deleteMarker', deleteMarker);
-	// context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('marker.deleteMarker', () => {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
+
+		const cursorPos = editor.selection.active;
+		const fileName = editor.document.uri.toString();
+
+		markers.set(fileName, markers.get(fileName)!.filter((marker: any) => {
+			return !marker.contains(cursorPos);
+		}));
+
+		
+	});
+	context.subscriptions.push(disposable);
+
 	// disposable = vscode.commands.registerCommand('marker.deleteAllMarkers', deleteAllMarkers);
 	// context.subscriptions.push(disposable);
 
@@ -94,23 +110,17 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}, null, context.subscriptions);
 
-	const hoverProvider = vscode.languages.registerHoverProvider('*', {
-		provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
-			const range = document.getWordRangeAtPosition(position);
-			const word = document.getText(range);
-			const hoverString = new vscode.MarkdownString();
-			hoverString.appendMarkdown(`## Main category:\n\n`);
-			hoverString.appendMarkdown(``);
-			hoverString.appendMarkdown(`### Sub categories:\n\n`);
-			hoverString.appendMarkdown(``);
-			return new vscode.Hover(hoverString);
-		}
-	});
-
-	function updateDecorationType() {
-		if (!existingCategories) {
-			return;
-		}
+	function hover(line: String) {
+		vscode.languages.registerHoverProvider('*', {
+			provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
+				const hoverString = new vscode.MarkdownString();
+				hoverString.appendMarkdown(`## Main category:\n\n`);
+				hoverString.appendMarkdown(`${line}\n\n`);
+				// hoverString.appendMarkdown(`### Sub categories:\n\n`);
+				// hoverString.appendMarkdown(``);
+				return new vscode.Hover(hoverString);
+			}
+		});
 	}
 }
 
@@ -125,10 +135,6 @@ class Category {
 }
 
 let existingCategories: Category[] = [];
-
-function deleteMarker() {
-
-}
 
 function deleteAllMarkers() {
 	
