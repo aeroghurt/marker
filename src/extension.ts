@@ -179,10 +179,70 @@ function getMarkerInfo(
 	return null;
 }
 
-interface contentChange {
-	rangeOffset: number;
-	rangeLength: number;
-	text: string;
+// basically onDidChangeTextDocument event but with a tiny change
+interface ContentChange {
+	rangeOffset: number; // start offset of the replaced range 
+	rangeLength: number; // length of the replaced range (0 for pure insertions)
+	text: string; // replacement text
+}
+
+function adjustForChanges(
+	markers: Marker[],
+	changes: readonly ContentChange[]
+): Marker[] {
+	// processes last changes first
+	const sorted = [...changes].sort((a, b) => b.rangeOffset - a.rangeOffset);
+
+	let result: Marker[] = [...markers];
+
+	for (const change of sorted){
+		const co = change.rangeOffset;
+		const cl = change.rangeLength;
+		const nl = change.text.length;
+		const editEnd = co + cl;
+		const delta = nl - cl; // overall character shift
+
+		const next: Marker[] = [];
+
+		for (const m of result) {
+			const s = m.start;
+			const e = m.end;
+
+			// edit is after the marker -> no change 
+			if (co >= e) {
+				next.push(m); 
+				continue;
+			}
+
+			// edit is completely before the marker
+			if (editEnd <= s) {
+				next.push({ ...m, start: s + delta, end: e + delta });
+				continue;
+			}
+
+			// edit completely covers the marker
+			if (co <= s && editEnd >= e) {
+				if (nl === 0) {
+					continue;
+				}
+
+				next.push({ ...m, start: co, end: co + nl});
+				continue;
+			}
+			next.push(m);
+		}
+		result = next.filter(m => m.start < m.end);
+	}
+	return result;
+}
+
+function createMarker(
+	id: string,
+	start: number,
+	end: number,
+	text: string
+): Marker{
+	return {id, start, end, text};
 }
 // let markers = new Map<vscode.Range, markersInterface>();
 
